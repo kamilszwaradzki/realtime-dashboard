@@ -1,3 +1,4 @@
+import { DecimalPipe } from '@angular/common';
 import {
   Component,
   input,
@@ -10,17 +11,37 @@ import {
   effect,
   computed,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Chart, ChartConfiguration, registerables } from 'chart.js';
+import {
+  Chart,
+  ChartConfiguration,
+  LineController,
+  BarController,
+  LineElement,
+  BarElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Filler,
+  Tooltip,
+} from 'chart.js';
 import { MetricAggregate } from '../../../../core/models/metric.model';
 
-// Register Chart.js components
-Chart.register(...registerables);
+Chart.register(
+  LineController,
+  BarController,
+  LineElement,
+  BarElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Filler,
+  Tooltip,
+);
 
 @Component({
   selector: 'app-chart-widget',
   standalone: true,
-  imports: [CommonModule],
+  imports: [DecimalPipe],
   template: `
     <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
       <!-- Header -->
@@ -31,8 +52,8 @@ Chart.register(...registerables);
         
         <!-- Chart Type Selector -->
         <div class="flex items-center space-x-2">
+          @for (type of chartTypes; track type.value) {
           <button
-            *ngFor="let type of chartTypes"
             (click)="setChartType(type.value)"
             [class]="getChartTypeButtonClass(type.value)"
             [title]="type.label"
@@ -41,6 +62,7 @@ Chart.register(...registerables);
               <path [attr.d]="type.icon" />
             </svg>
           </button>
+          }
         </div>
       </div>
 
@@ -94,18 +116,14 @@ export class ChartWidgetComponent implements AfterViewInit, OnDestroy {
   title = input<string>('Default Title');
   height = input<number>(400);
 
-  // Signals
   private _chartType = signal<'line' | 'bar' | 'area'>('line');
 
-  // Readonly signals
   readonly chartType = this._chartType.asReadonly();
   readonly isLoading = signal(false);
 
-  // Chart instance
   private chart: Chart | null = null;
   private animationFrameId: number | null = null;
 
-  // Chart types configuration
   readonly chartTypes = [
     {
       value: 'line' as const,
@@ -125,7 +143,6 @@ export class ChartWidgetComponent implements AfterViewInit, OnDestroy {
   ];
 
   constructor() {
-    // Update chart when metric changes
     effect(() => {
       const metric = this.metric();
       if (this.chart && metric.history.length > 0) {
@@ -133,7 +150,6 @@ export class ChartWidgetComponent implements AfterViewInit, OnDestroy {
       }
     });
 
-    // Recreate chart when type changes
     effect(() => {
       this._chartType();
       if (this.chart) {
@@ -144,7 +160,6 @@ export class ChartWidgetComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    // Wait for next tick to ensure canvas is rendered
     setTimeout(() => {
       this.createChart();
     }, 0);
@@ -161,9 +176,6 @@ export class ChartWidgetComponent implements AfterViewInit, OnDestroy {
     this._chartType.set(type);
   }
 
-  /**
-   * Create Chart.js instance
-   */
   private createChart(): void {
     if (!this.canvasRef) return;
 
@@ -176,31 +188,22 @@ export class ChartWidgetComponent implements AfterViewInit, OnDestroy {
     this.chart = new Chart(ctx, config);
   }
 
-  /**
-   * Update chart data
-   */
   private updateChart(): void {
     if (!this.chart) return;
 
     const metric = this.metric();
     const labels = this.generateLabels(metric.history.length);
 
-    // Update data
     this.chart.data.labels = labels;
     this.chart.data.datasets[0].data = metric.history;
 
-    // Update colors based on current value
     const colors = this.getChartColors(metric.current);
     this.chart.data.datasets[0].borderColor = colors.border;
     this.chart.data.datasets[0].backgroundColor = colors.background;
 
-    // Smooth update with animation
     this.chart.update('active');
   }
 
-  /**
-   * Get Chart.js configuration
-   */
   private getChartConfig(metric: MetricAggregate): ChartConfiguration {
     const labels = this.generateLabels(metric.history.length);
     const colors = this.getChartColors(metric.current);
@@ -218,7 +221,7 @@ export class ChartWidgetComponent implements AfterViewInit, OnDestroy {
             backgroundColor: colors.background,
             borderWidth: 2,
             fill: chartType === 'area',
-            tension: 0.4, // Smooth lines
+            tension: 0.4,
             pointRadius: chartType === 'line' ? 0 : 3,
             pointHoverRadius: 5,
             pointBackgroundColor: colors.border,
@@ -297,26 +300,19 @@ export class ChartWidgetComponent implements AfterViewInit, OnDestroy {
     };
   }
 
-  /**
-   * Generate time labels for X axis
-   */
   private generateLabels(count: number): string[] {
     return Array.from({ length: count }, (_, i) => {
-      const secondsAgo = (count - i - 1) * 1; // Assume 1 second intervals
+      const secondsAgo = (count - i - 1) * 1;
       if (secondsAgo === 0) return 'now';
       if (secondsAgo < 60) return `${secondsAgo}s`;
       return `${Math.floor(secondsAgo / 60)}m`;
     });
   }
 
-  /**
-   * Get chart colors based on metric value
-   */
   private getChartColors(value: number): {
     border: string;
     background: string | CanvasGradient;
   } {
-    // Thresholds
     const warningThreshold = 70;
     const dangerThreshold = 85;
 
@@ -324,17 +320,16 @@ export class ChartWidgetComponent implements AfterViewInit, OnDestroy {
     let backgroundColor: string;
 
     if (value >= dangerThreshold) {
-      borderColor = '#DC2626'; // red-600
+      borderColor = '#DC2626';
       backgroundColor = 'rgba(220, 38, 38, 0.1)';
     } else if (value >= warningThreshold) {
-      borderColor = '#F59E0B'; // amber-500
+      borderColor = '#F59E0B';
       backgroundColor = 'rgba(245, 158, 11, 0.1)';
     } else {
-      borderColor = '#3B82F6'; // blue-600
+      borderColor = '#3B82F6';
       backgroundColor = 'rgba(59, 130, 246, 0.1)';
     }
 
-    // Create gradient for area chart
     if (this._chartType() === 'area' && this.canvasRef) {
       const ctx = this.canvasRef.nativeElement.getContext('2d');
       if (ctx) {
@@ -358,9 +353,6 @@ export class ChartWidgetComponent implements AfterViewInit, OnDestroy {
     return { border: borderColor, background: backgroundColor };
   }
 
-  /**
-   * Get button class for chart type selector
-   */
   getChartTypeButtonClass(type: 'line' | 'bar' | 'area'): string {
     const baseClass = 'p-2 rounded-md transition-colors';
     const activeClass = 'bg-blue-100 text-blue-600';
@@ -369,9 +361,6 @@ export class ChartWidgetComponent implements AfterViewInit, OnDestroy {
     return `${baseClass} ${this._chartType() === type ? activeClass : inactiveClass}`;
   }
 
-  /**
-   * Get color class for value display
-   */
   getValueColorClass(value: number): string {
     if (value >= 85) return 'text-red-600';
     if (value >= 70) return 'text-yellow-600';
