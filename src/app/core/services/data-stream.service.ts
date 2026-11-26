@@ -13,7 +13,7 @@ export class DataStreamService {
         return JSON.parse(event.data);
       } catch (err) {
         console.error('Invalid JSON from WS:', event.data);
-        throw err; // albo return null / custom error
+        throw err;
       }
     }),
 
