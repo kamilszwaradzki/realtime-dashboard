@@ -202,7 +202,7 @@ export class DashboardComponent implements OnInit {
     return titles[type] || type.toUpperCase();
   }
 
-  debugInfo = computed(() => ({  // zrób computed signal
+  debugInfo = computed(() => ({
     connection: this.connection(),
     isPaused: this.isPaused(),
     metricsCount: this.metricsArray().length,
