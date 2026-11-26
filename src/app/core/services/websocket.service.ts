@@ -22,6 +22,7 @@ import {
 } from 'rxjs/operators';
 import { Metric } from '../../core/models/metric.model';
 import { ConnectionState } from '../../core/models/stream-config.model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -29,9 +30,8 @@ import { ConnectionState } from '../../core/models/stream-config.model';
 export class WebSocketService {
   private destroyRef = inject(DestroyRef);
   
-  // WebSocket URL - można to przenieść do environment
-  private readonly WS_URL = 'ws://localhost:3000';
-  
+  private readonly WS_URL = environment.wsUrl;  
+
   // Subjects for connection management
   private connectionSubject = new Subject<ConnectionState>();
   private messageSubject = new Subject<Metric>();
