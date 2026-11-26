@@ -14,7 +14,7 @@ The backend in `backend/` is a small Node + `ws` server that deliberately misbeh
 - **Errors:** server errors are listed in the UI and marked as retryable or not.
 - **Charts:** drawn with Chart.js. All dashboard components use `OnPush`.
 
-Stack: Angular 21, RxJS, Signals, Tailwind, Chart.js, Node/Express, ws.
+Stack: Angular 21, RxJS, Signals, Tailwind, Chart.js, Node (http + ws).
 
 ## Run
 
@@ -26,8 +26,3 @@ npm start                 # http://localhost:4200
 ```
 
 Burst, error and disconnect probabilities are set at the top of `backend/server.js`.
-
-## TODO
-
-- unit tests for the backpressure operator (marble tests)
-- move the WebSocket URL to `environment.ts`
